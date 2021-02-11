@@ -10,5 +10,7 @@
 
 #include "composer.h"
 
+typedef PayloadComposer MakerMatty_PayloadComposer;
+
 #endif
 #endif
