@@ -14,7 +14,7 @@
 
 class PayloadComposer {
 public:
-    typedef std::function<bool(uint8_t* source, const uint8_t* destination, size_t size)> TransferFunction;
+    typedef std::function<bool(uint8_t* destination, const uint8_t* source, size_t size)> TransferFunction;
 
 private:
     struct payload_t {
