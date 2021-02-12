@@ -5,12 +5,12 @@
 
 #include <Arduino.h>
 
+#include "stl_make_unique.h"
+
 #include <functional>
 #include <list>
 #include <memory>
 #include <queue>
-
-#include "stl_make_unique.h"
 
 class PayloadComposer {
 public:
