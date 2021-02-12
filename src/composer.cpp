@@ -6,13 +6,13 @@
 
 PayloadComposer::PayloadComposer()
     : m_payload_buffer()
-    , m_current_payload(nullptr)
+    , m_current_payload { nullptr, 0 }
     , m_current_payload_gaps()
-    , m_current_payload_uuid(0)
+    , m_current_payload_uuid(0x00)
 {
 }
 
-bool PayloadComposer::compose(const size_t payload_uuid, const uint8_t * const payload_data, const size_t payload_length, const size_t payload_index, const size_t payload_total)
+bool PayloadComposer::compose(const size_t payload_uuid, const uint8_t* const payload_data, const size_t payload_length, const size_t payload_index, const size_t payload_total, const TransferFunction transferFunction)
 {
     if (!payload_uuid) {
         log_e("Invalid payload_uuid, payload_uuid must be != 0");
@@ -31,29 +31,37 @@ bool PayloadComposer::compose(const size_t payload_uuid, const uint8_t * const p
         m_current_payload_uuid = payload_uuid;
 
         try {
-            m_current_payload = std::make_unique<std::vector<uint8_t>>(payload_total); // override the old m_payload_buffer by a new one
+            m_current_payload.data = std::make_unique<uint8_t>(payload_total); // override the old m_payload_buffer by a new one
+            m_current_payload.size = payload_total;
         } catch (std::bad_alloc e) {
             log_e("Failed to allocate enough memory.");
-            m_current_payload = nullptr;
+            m_current_payload.data = nullptr;
+            m_current_payload.size = 0;
         }
     }
 
     if (payload_uuid == m_current_payload_uuid) {
 
-        if (!m_current_payload) {
-            log_w("m_current_payload == nullptr");
+        if (!m_current_payload.data || !m_current_payload.size) {
+            log_w("Invalid Payload buffer");
             return false;
         }
 
-        if (payload_to_index > m_current_payload->size()) {
+        if (payload_to_index > m_current_payload.size) {
             log_e("Buffer is not big enough");
-            m_current_payload = nullptr;
+            m_current_payload.data = nullptr;
+            m_current_payload.size = 0;
             m_current_payload_uuid = 0x00;
             return false;
         }
 
         log_d("Copying payload, to_index = %u, from_index = %u, length = %u", payload_to_index, payload_from_index, payload_length);
-        memcpy(m_current_payload->data() + payload_from_index, payload_data, payload_length);
+        if (!transferFunction(m_current_payload.data.get() + payload_from_index, payload_data, payload_length)) {
+            log_e("Payload is not valid");
+            m_current_payload.data = nullptr;
+            m_current_payload.size = 0;
+            return false;
+        }
 
         for (auto gap_it = m_current_payload_gaps.begin(); gap_it != m_current_payload_gaps.end(); /* NOP */) {
 
@@ -73,8 +81,11 @@ bool PayloadComposer::compose(const size_t payload_uuid, const uint8_t * const p
         if (m_current_payload_gaps.size() == 0) {
             log_d("Bytes end of the uuid %u", payload_uuid);
 
+            //m_payload_buffer.emplace(std::move(m_current_payload), m_current_payload.size);
             m_payload_buffer.push(std::move(m_current_payload));
-            m_current_payload = nullptr;
+
+            m_current_payload.data = nullptr;
+            m_current_payload.size = 0;
             m_current_payload_uuid = 0x00;
         }
     }
@@ -87,11 +98,16 @@ size_t PayloadComposer::available()
     return m_payload_buffer.size();
 }
 
-std::unique_ptr<std::vector<uint8_t>> PayloadComposer::read()
+bool PayloadComposer::read(std::unique_ptr<uint8_t>& payload_out, size_t& size_out)
 {
-    std::vector<uint8_t>* payload = m_payload_buffer.front().release();
-    m_payload_buffer.pop();
-    return std::unique_ptr<std::vector<uint8_t>>(payload);
+    if (PayloadComposer::available()) {
+        payload_out = std::move(m_payload_buffer.front().data);
+        size_out = m_payload_buffer.front().size;
+        m_payload_buffer.pop();
+        return true;
+    } else {
+        return false;
+    }
 }
 
 #endif
