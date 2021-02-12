@@ -31,7 +31,7 @@ bool PayloadComposer::compose(const size_t payload_uuid, const uint8_t* const pa
         m_current_payload_uuid = payload_uuid;
 
         try {
-            m_current_payload.data = std::make_unique<uint8_t>(payload_total); // override the old m_payload_buffer by a new one
+            m_current_payload.data = std::make_unique<uint8_t[]>(payload_total); // override the old m_payload_buffer by a new one
             m_current_payload.size = payload_total;
         } catch (std::bad_alloc e) {
             log_e("Failed to allocate enough memory.");
@@ -98,7 +98,7 @@ size_t PayloadComposer::available()
     return m_payload_buffer.size();
 }
 
-bool PayloadComposer::read(std::unique_ptr<uint8_t>& payload_out, size_t& size_out)
+bool PayloadComposer::read(std::unique_ptr<uint8_t[]>& payload_out, size_t& size_out)
 {
     if (PayloadComposer::available()) {
         payload_out = std::move(m_payload_buffer.front().data);

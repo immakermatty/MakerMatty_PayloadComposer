@@ -18,7 +18,7 @@ public:
 
 private:
     struct payload_t {
-        std::unique_ptr<uint8_t> data;
+        std::unique_ptr<uint8_t[]> data;
         size_t size;
     };
 
@@ -46,7 +46,7 @@ public:
     size_t available();
 
     //read the finished Bytes
-    bool read(std::unique_ptr<uint8_t>& payload_out, size_t& size_out);
+    bool read(std::unique_ptr<uint8_t[]>& payload_out, size_t& size_out);
 
 private:
     static inline bool defalutTransferFuntion(uint8_t* source, const uint8_t* destination, size_t size)
