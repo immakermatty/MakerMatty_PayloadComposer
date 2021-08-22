@@ -34,7 +34,7 @@ bool Payload::Composer::compose(const payload_uuid_t payload_uuid, const uint8_t
         try {
             m_current_payload.data = std::make_unique<uint8_t[]>(payload_total); // override the old m_payload_buffer by a new one
             m_current_payload.size = payload_total;
-        } catch (std::bad_alloc e) {
+        } catch (std::bad_alloc& e) {
             log_e("Failed to allocate enough memory.");
             m_current_payload.data = nullptr;
             m_current_payload.size = 0;

@@ -15,17 +15,17 @@
 #include <memory>
 #include <queue>
 
+struct payload_t {
+    std::unique_ptr<uint8_t[]> data;
+    size_t size;
+};
+
 class Payload {
 public:
     typedef uint32_t payload_uuid_t;
     typedef std::function<bool(uint8_t* destination, const uint8_t* source, size_t size)> TransferFunction;
 
     class Composer {
-
-        struct payload_t {
-            std::unique_ptr<uint8_t[]> data;
-            size_t size;
-        };
 
         struct gap_t {
 
@@ -64,30 +64,35 @@ public:
 
 public:
     Payload()
-        : m_payload(nullptr)
+        : m_composer(nullptr)
     {
+    }
+
+    ~Payload()
+    {
+        delete m_composer;
     }
 
     Composer* getComposer()
     {
-        return m_payload;
+        return m_composer;
     }
 
     //returns false on proccessing fail
     inline bool compose(const payload_uuid_t payload_uuid, const uint8_t* const payload_data, const size_t payload_length, const size_t payload_index, const size_t payload_total, const TransferFunction transferFunction = defalutTransferFuntion)
     {
-        if (!m_payload) {
-            m_payload = new Composer();
+        if (!m_composer) {
+            m_composer = new Composer();
         }
 
-        return m_payload->compose(payload_uuid, payload_data, payload_length, payload_index, payload_total, transferFunction);
+        return m_composer->compose(payload_uuid, payload_data, payload_length, payload_index, payload_total, transferFunction);
     }
 
     //if payload is ready
     inline size_t available()
     {
-        if (m_payload) {
-            return m_payload->available();
+        if (m_composer) {
+            return m_composer->available();
         } else {
             return 0;
         }
@@ -96,10 +101,11 @@ public:
     //read the finished Bytes
     inline bool read(std::unique_ptr<uint8_t[]>& payload_out, size_t& size_out)
     {
-        if (m_payload) {
-            bool success = m_payload->read(payload_out, size_out);
-            if (!m_payload->available()) {
-                delete m_payload;
+        if (m_composer) {
+            bool success = m_composer->read(payload_out, size_out);
+            if (!m_composer->available()) {
+                delete m_composer;
+                m_composer = nullptr;
             }
             return success;
         } else {
@@ -114,7 +120,7 @@ private:
         return true;
     };
 
-    Composer* m_payload;
+    Composer* m_composer;
 };
 
 //////////////////////////////////////////////////////////////////////////////////
