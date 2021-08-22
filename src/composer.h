@@ -78,9 +78,9 @@ public:
     {
         if (!m_payload) {
             m_payload = new Composer();
-        } else {
-            return m_payload->compose(payload_uuid, payload_data, payload_length, payload_index, payload_total, transferFunction);
         }
+
+        return m_payload->compose(payload_uuid, payload_data, payload_length, payload_index, payload_total, transferFunction);
     }
 
     //if payload is ready
