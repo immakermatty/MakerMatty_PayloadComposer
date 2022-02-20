@@ -56,7 +56,7 @@ public:
         bool read(std::unique_ptr<uint8_t[]>& payload_out, size_t& size_out);
 
     private:
-        std::queue<payload_t> m_payload_buffer;
+        std::list<payload_t> m_payload_buffer;
         payload_t m_current_payload;
         std::list<gap_t> m_current_payload_gaps;
         payload_uuid_t m_current_payload_uuid = 0;
@@ -78,17 +78,24 @@ public:
         return m_composer;
     }
 
-    //returns false on proccessing fail
+    // returns false on proccessing fail
     inline bool compose(const payload_uuid_t payload_uuid, const uint8_t* const payload_data, const size_t payload_length, const size_t payload_index, const size_t payload_total, const TransferFunction transferFunction = defalutTransferFuntion)
     {
         if (!m_composer) {
-            m_composer = new Composer();
+            try {
+                m_composer = new Composer();
+            } catch (...) {
+                log_e("Composer allocation ERROR");
+                delete m_composer;
+                m_composer = nullptr;
+                return false;
+            }
         }
 
         return m_composer->compose(payload_uuid, payload_data, payload_length, payload_index, payload_total, transferFunction);
     }
 
-    //if payload is ready
+    // if payload is ready
     inline size_t available()
     {
         if (m_composer) {
@@ -99,11 +106,11 @@ public:
     }
 
     //read the finished Bytes
-    inline bool read(std::unique_ptr<uint8_t[]>& payload_out, size_t& size_out)
+    inline bool read(std::unique_ptr<uint8_t[]>& payload_out, size_t& size_out, const bool keep_composer = false)
     {
         if (m_composer) {
             bool success = m_composer->read(payload_out, size_out);
-            if (!m_composer->available()) {
+            if (!keep_composer && !m_composer->available()) {
                 delete m_composer;
                 m_composer = nullptr;
             }
