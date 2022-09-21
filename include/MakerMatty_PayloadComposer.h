@@ -10,8 +10,8 @@
 
 #include "composer.h"
 
-typedef Payload MakerMatty_Payload;
-typedef Payload PayloadComposer;
+typedef Composer_ MakerMatty_Payload;
+typedef Composer_ PayloadComposer;
 
 #endif
 #endif
