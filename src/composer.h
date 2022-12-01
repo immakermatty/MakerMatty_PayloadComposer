@@ -80,6 +80,8 @@ public:
 
         payload_t(const uint64_t uuid, const size_t size, const uint32_t custom, const uint32_t timeout)
             : uuid(uuid)
+            , updated(0)
+            , timeout(timeout)
             , payload(size, custom) {};
 
         uint64_t uuid;
